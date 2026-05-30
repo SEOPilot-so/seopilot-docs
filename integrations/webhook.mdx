@@ -1,0 +1,115 @@
+---
+title: "Receive SEOPilot Articles Automatically via Webhook"
+sidebarTitle: "Webhook"
+description: "Configure a webhook endpoint to receive SEOPilot articles the moment they're approved. SEOPilot POSTs each article payload to your URL automatically."
+---
+
+The SEOPilot webhook lets you receive articles automatically as soon as they're approved for publishing. SEOPilot sends a POST request to your endpoint with the full article payload — no polling required. Every article lands in your system the moment it's ready, so your site stays fresh without any manual intervention.
+
+## Setting up your webhook
+
+<Steps>
+  <Step title="Open Publishing settings">
+    Go to **Settings → Publishing** in your SEOPilot dashboard.
+  </Step>
+  <Step title="Enter your webhook URL">
+    Paste the full URL of your endpoint (e.g., `https://yoursite.com/api/seopilot`). SEOPilot will POST article payloads to this address.
+  </Step>
+  <Step title="Set a secret token (recommended)">
+    Optionally add a secret token. SEOPilot uses this to sign every request so you can verify payloads on your end before processing them.
+  </Step>
+  <Step title="Save and test">
+    Click **Save**, then hit **Send test payload** to confirm your endpoint is reachable and responding correctly.
+  </Step>
+</Steps>
+
+## Webhook payload
+
+When an article is approved and ready, SEOPilot sends a `POST` request with a JSON body structured as follows. The payload includes everything you need to render and serve the article from your own domain.
+
+```json payload-example.json
+{
+  "event": "article.published",
+  "article": {
+    "id": "art_01hx3z...",
+    "title": "How to Choose a CRM for a Solo Realtor",
+    "slug": "crm-for-solo-realtors",
+    "meta_description": "A practical guide to picking the right CRM...",
+    "keyword": "crm for solo realtors",
+    "body_html": "<article>...</article>",
+    "body_mdx": "# How to Choose a CRM...",
+    "published_at": "2026-06-01T09:00:00Z"
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `event` | string | Always `article.published` for new articles. |
+| `article.id` | string | Unique identifier for the article in SEOPilot. |
+| `article.title` | string | The article's full title. |
+| `article.slug` | string | URL-safe slug for use in your routing. |
+| `article.meta_description` | string | SEO meta description for the `<meta>` tag. |
+| `article.keyword` | string | The primary keyword this article targets. |
+| `article.body_html` | string | Rendered HTML body of the article. |
+| `article.body_mdx` | string | Raw MDX source, ideal for static site generators. |
+| `article.published_at` | string | ISO 8601 timestamp of when the article was approved. |
+
+## Verifying webhook signatures
+
+SEOPilot signs each request with an HMAC-SHA256 signature derived from your secret token. The signature is sent in the `X-SEOPilot-Signature` request header. You should verify this signature before doing anything with the payload — it guarantees the request genuinely came from SEOPilot and hasn't been tampered with.
+
+```javascript webhook-handler.js
+const crypto = require('crypto');
+
+/**
+ * Verify a SEOPilot webhook request.
+ *
+ * @param {Buffer|string} rawBody  - The raw, unparsed request body bytes.
+ * @param {string}        signature - Value of the X-SEOPilot-Signature header.
+ * @param {string}        secret    - Your webhook secret token from SEOPilot settings.
+ * @returns {boolean}
+ */
+function verifyWebhook(rawBody, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+
+  const sigBuf      = Buffer.from(signature, 'hex');
+  const expectedBuf = Buffer.from(expected,  'hex');
+
+  // timingSafeEqual requires both buffers to be the same length.
+  if (sigBuf.length !== expectedBuf.length) return false;
+
+  return crypto.timingSafeEqual(sigBuf, expectedBuf);
+}
+```
+
+Pass the **raw** (unparsed) request body bytes as `rawBody` — do not pass a pre-parsed JSON object, because re-serializing it may produce a different byte sequence. Pass the value of the `X-SEOPilot-Signature` header as `signature`, and your secret token as `secret`. If `verifyWebhook` returns `false`, reject the request with a `401` and do not process the article.
+
+<Warning>
+  Always verify the webhook signature before processing the payload. Do not publish content from unverified requests.
+</Warning>
+
+## Handling failed deliveries
+
+Your endpoint must respond with a `2xx` status code for SEOPilot to consider a delivery successful. If it doesn't, SEOPilot automatically retries the delivery up to **3 times** using exponential backoff:
+
+<CardGroup cols={3}>
+  <Card title="Retry 1" icon="clock">
+    5 minutes after the initial failure.
+  </Card>
+  <Card title="Retry 2" icon="clock">
+    15 minutes after the first retry.
+  </Card>
+  <Card title="Retry 3" icon="clock">
+    1 hour after the second retry.
+  </Card>
+</CardGroup>
+
+If all three retries fail, the article moves to a **Delivery failed** state in your dashboard. From there you can manually re-trigger delivery with a single click, or download the article directly and publish it yourself.
+
+<Note>
+  Your webhook endpoint must return a `2xx` HTTP response within **10 seconds**, otherwise SEOPilot will treat the delivery as failed and begin the retry sequence.
+</Note>

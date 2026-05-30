@@ -1,0 +1,81 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "SEOPilot",
+  "theme": "almond",
+  "logo": {
+    "light": "https://media.brand.dev/8d3482e5-0874-41e1-90b7-43f3fffbac05.svg",
+    "dark": "https://media.brand.dev/8d3482e5-0874-41e1-90b7-43f3fffbac05.svg"
+  },
+  "favicon": "https://media.brand.dev/0c6a8458-d04a-4275-9715-21ad2273199d.png",
+  "colors": {
+    "primary": "#f9684a",
+    "light": "#fc9484",
+    "dark": "#f4eaea"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/keyword-research",
+              "features/article-generation",
+              "features/publishing",
+              "features/brand-voice"
+            ]
+          },
+          {
+            "group": "Publishing & Integration",
+            "pages": [
+              "integrations/webhook",
+              "integrations/mdx-csv-export",
+              "integrations/static-sites"
+            ]
+          },
+          {
+            "group": "Plans & Billing",
+            "pages": [
+              "billing/plans",
+              "billing/faq"
+            ]
+          },
+          {
+            "group": "Free Tools",
+            "pages": [
+              "tools/overview",
+              "tools/seo-blog-title-generator",
+              "tools/long-tail-blog-title-generator",
+              "tools/programmatic-seo-title-generator",
+              "tools/blog-title-meta-description-generator",
+              "tools/keyword-to-blog-outline-generator"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "help/faq",
+              "help/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://seopilot.so"
+    }
+  }
+}

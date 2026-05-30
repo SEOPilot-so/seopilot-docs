@@ -1,0 +1,87 @@
+{
+  "projectType": "saas",
+  "projectName": "SEOPilot",
+  "projectDescription": "SEOPilot is an AI-powered SEO automation platform that researches high-intent keywords weekly and publishes a fresh, brand-voice-matched article every day to grow organic traffic on autopilot.",
+  "theme": "almond",
+  "primaryColor": "#f9684a",
+  "lightColor": "#fc9484",
+  "darkColor": "#f4eaea",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/keyword-research",
+              "features/article-generation",
+              "features/publishing",
+              "features/brand-voice"
+            ]
+          },
+          {
+            "group": "Publishing & Integration",
+            "pages": [
+              "integrations/webhook",
+              "integrations/mdx-csv-export",
+              "integrations/static-sites"
+            ]
+          },
+          {
+            "group": "Plans & Billing",
+            "pages": [
+              "billing/plans",
+              "billing/faq"
+            ]
+          },
+          {
+            "group": "Free Tools",
+            "pages": [
+              "tools/overview",
+              "tools/seo-blog-title-generator",
+              "tools/long-tail-blog-title-generator",
+              "tools/programmatic-seo-title-generator",
+              "tools/blog-title-meta-description-generator",
+              "tools/keyword-to-blog-outline-generator"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "help/faq",
+              "help/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Weekly high-intent keyword research (7 keywords/week)",
+    "Daily AI-generated, brand-voice-matched SEO articles",
+    "Autopilot or review-first publishing modes",
+    "Brand voice detection from your site URL",
+    "Webhook and MDX/CSV export for publishing to any site",
+    "Built-in editor for titles, meta descriptions, slugs, and images",
+    "SEO structure baked in (schema markup, H2/H3, FAQ sections)",
+    "Visibility in Google, ChatGPT, Perplexity, and Gemini",
+    "Free traffic estimate with no signup required",
+    "Five free SEO content tools (title, outline, meta generators)"
+  ],
+  "publicApiSurface": [
+    "Webhook endpoint for article delivery",
+    "Pull API (JSON/MDX/CSV export) for article retrieval",
+    "Traffic estimate tool (no signup required)",
+    "Checkout API: /api/polar/checkout?tier=monthly",
+    "Checkout API: /api/polar/checkout?tier=annual"
+  ]
+}

@@ -1,0 +1,102 @@
+---
+title: "Publish SEOPilot Articles to Your Static Site Generator"
+sidebarTitle: "Static Sites"
+description: "Connect SEOPilot to Next.js, Astro, Hugo, or any other static site generator to automatically publish daily SEO articles to your own domain."
+---
+
+SEOPilot is designed to publish directly to your domain, no matter what stack you use. This guide covers how to wire up automatic publishing using a webhook handler for the most popular static site frameworks. Because every article is served from your own domain, all SEO credit — backlinks, authority, rankings — stays with you.
+
+<Note>
+  For Vercel and Netlify, you can add a deploy hook URL as a second step in your webhook handler to trigger an automatic rebuild after each article is saved.
+</Note>
+
+## Next.js
+
+Create an API route at `/api/seopilot` that receives the SEOPilot webhook, writes the article body as an MDX file into your `content/blog/` directory, and then triggers Next.js Incremental Static Regeneration (ISR) so the new page goes live without a full rebuild.
+
+<Steps>
+  <Step title="Create the API route">
+    Add a new file at `pages/api/seopilot.js` (Pages Router) with the handler below. If you use the App Router, see the note after the code example.
+  </Step>
+  <Step title="Add your webhook URL to SEOPilot">
+    Go to **Settings → Publishing** and enter `https://yoursite.com/api/seopilot` as the webhook URL.
+  </Step>
+  <Step title="Deploy and test">
+    Deploy your changes, then use the **Send test payload** button in SEOPilot to confirm the handler writes the file and revalidates correctly.
+  </Step>
+</Steps>
+
+```javascript pages/api/seopilot.js
+import fs from 'fs';
+import path from 'path';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+
+  const { article } = req.body;
+
+  // Save the article as MDX
+  const filePath = path.join(process.cwd(), 'content/blog', `${article.slug}.mdx`);
+  fs.writeFileSync(filePath, article.body_mdx);
+
+  // Trigger on-demand ISR for this page (Pages Router only)
+  await res.revalidate(`/blog/${article.slug}`);
+
+  res.status(200).json({ received: true });
+}
+```
+
+Before writing the file, verify the `X-SEOPilot-Signature` header using your secret token. See the [Webhook guide](/integrations/webhook#verifying-webhook-signatures) for the full verification helper.
+
+<Note>
+  **App Router users:** `res.revalidate()` is a Pages Router API and is not available in App Router route handlers. Use `revalidatePath` from `next/cache` instead. Create `app/api/seopilot/route.js` and call `revalidatePath('/blog/' + article.slug)` after saving the file.
+</Note>
+
+## Astro
+
+Astro's [Content Collections](https://docs.astro.build/en/guides/content-collections/) make it straightforward to consume SEOPilot MDX files. Create a lightweight webhook handler (e.g., a serverless function on Vercel or Netlify) that writes incoming MDX payloads to `src/content/blog/`, then fires your CI provider's deploy hook to trigger a rebuild.
+
+The MDX frontmatter that SEOPilot exports (`title`, `slug`, `meta_description`, `keyword`, `published_at`) maps directly to a standard Astro content collection schema — no transformation needed. Define your collection in `src/content/config.ts` and Astro will pick up new files automatically on the next build.
+
+<Tip>
+  If you don't want to write custom code, use the MDX export and drag the files into your content directory manually. The webhook approach just automates that step.
+</Tip>
+
+## Hugo
+
+Hugo reads Markdown content from `content/posts/`. Point your webhook handler to write each article's `body_mdx` field (Hugo accepts standard Markdown with YAML frontmatter) into `content/posts/${slug}.md`, then trigger a rebuild via your hosting provider's deploy hook.
+
+A minimal Hugo frontmatter block looks like this:
+
+```markdown content/posts/crm-for-solo-realtors.md
+---
+title: "How to Choose a CRM for a Solo Realtor"
+slug: "crm-for-solo-realtors"
+date: "2026-06-01"
+description: "A practical guide to picking the right CRM..."
+---
+
+# How to Choose a CRM for a Solo Realtor
+
+...
+```
+
+SEOPilot's webhook payload fields map directly to Hugo's standard front matter keys, so no translation layer is required.
+
+## Any other framework
+
+The integration pattern is the same regardless of your framework or hosting provider:
+
+<Steps>
+  <Step title="Receive the webhook">
+    Accept the POST request from SEOPilot at an endpoint you control. Verify the signature before proceeding.
+  </Step>
+  <Step title="Save the article body">
+    Write `article.body_mdx` (or `article.body_html`) to the appropriate content directory for your framework.
+  </Step>
+  <Step title="Trigger a rebuild or revalidation">
+    Call your hosting provider's deploy hook, or use your framework's built-in revalidation API, to make the new page live.
+  </Step>
+</Steps>
+
+The exact rebuild trigger depends on your hosting provider. Vercel and Netlify both offer one-click deploy hooks you can call with a simple HTTP `POST`. Other providers such as Render, Fly.io, and Railway have equivalent mechanisms in their dashboards.

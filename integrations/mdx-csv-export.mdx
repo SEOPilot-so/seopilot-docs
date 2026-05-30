@@ -1,0 +1,82 @@
+---
+title: "Export SEOPilot Articles as MDX Files or CSV Spreadsheets"
+sidebarTitle: "MDX & CSV Export"
+description: "Pull approved articles from SEOPilot as MDX files for static site generators or as CSV for spreadsheet workflows and bulk imports."
+---
+
+If you prefer pulling articles on your own schedule instead of receiving webhook pushes, SEOPilot lets you export any approved article as MDX (ideal for static site generators) or CSV (ideal for spreadsheet workflows and CMS imports). Both formats contain every field you need to publish the article and pass SEO metadata to your platform.
+
+## Exporting a single article
+
+<Steps>
+  <Step title="Open the article">
+    Navigate to the **Articles** section of your SEOPilot dashboard and click on the article you want to export.
+  </Step>
+  <Step title="Click Export">
+    Select the **Export** button in the top-right corner of the article detail view.
+  </Step>
+  <Step title="Choose your format">
+    Pick **MDX** if you're publishing to a static site generator, or **CSV** if you need a spreadsheet-friendly format for bulk imports or CMS ingestion.
+  </Step>
+  <Step title="Download the file">
+    Your file will download immediately. No additional configuration is required.
+  </Step>
+</Steps>
+
+## MDX export format
+
+The MDX export produces a single `.mdx` file with a YAML frontmatter block followed by the article body. All standard SEO fields are included in the frontmatter so your site generator can read them without any transformation.
+
+```mdx article-example.mdx
+---
+title: "How to Choose a CRM for a Solo Realtor"
+slug: "crm-for-solo-realtors"
+keyword: "crm for solo realtors"
+meta_description: "A practical guide to picking the right CRM..."
+published_at: "2026-06-01"
+---
+
+# How to Choose a CRM for a Solo Realtor
+
+...
+```
+
+<Tip>
+  If you're using Next.js or Astro, drop the exported MDX files into your `content/` or `src/content/` directory. They're ready to render with no modification.
+</Tip>
+
+## CSV export format
+
+The CSV export contains one row per article and is suitable for bulk imports into headless CMSes, spreadsheet analysis, or any workflow that prefers tabular data. The file uses standard comma separation with a header row.
+
+| Column | Description |
+|---|---|
+| `id` | Unique SEOPilot article identifier. |
+| `title` | Full article title. |
+| `slug` | URL-safe slug for routing. |
+| `keyword` | Primary target keyword. |
+| `meta_description` | SEO meta description text. |
+| `body_html` | Full rendered HTML body of the article. |
+| `published_at` | ISO 8601 publication date. |
+
+**Sample row:**
+
+```csv articles-export.csv
+id,title,slug,keyword,meta_description,body_html,published_at
+art_01hx3z,"How to Choose a CRM for a Solo Realtor",crm-for-solo-realtors,crm for solo realtors,"A practical guide to picking the right CRM...","<article>...</article>",2026-06-01
+```
+
+## Bulk export
+
+You can export all approved articles at once without opening them individually. Go to **Articles → Export All** to trigger a bulk export. SEOPilot will package your articles into a single download:
+
+<CardGroup cols={2}>
+  <Card title="Bulk MDX export" icon="file-code">
+    A ZIP file containing one `.mdx` file per article. Drop the entire folder into your content directory to publish everything at once.
+  </Card>
+  <Card title="Bulk CSV export" icon="table">
+    A single `.csv` file with all approved articles as rows. Ideal for one-shot imports into a headless CMS or a spreadsheet dashboard.
+  </Card>
+</CardGroup>
+
+The bulk export always reflects the current state of your **Approved** articles. Drafts and articles pending review are not included.

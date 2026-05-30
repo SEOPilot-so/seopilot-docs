@@ -1,0 +1,85 @@
+---
+title: "Troubleshooting SEOPilot: Fixes for Common Problems"
+sidebarTitle: "Troubleshooting"
+description: "Fix common SEOPilot issues: webhook delivery failures, brand voice mismatches, off-target keywords, and articles not appearing in Google Search Console."
+---
+
+Most SEOPilot issues fall into one of four categories: connection problems (webhook not receiving articles), content quality (articles not matching your voice), keyword relevance, and indexing. Here's how to diagnose and fix each one.
+
+## Webhook not receiving articles
+
+If articles are being drafted but aren't arriving at your site, the issue is almost always in the webhook configuration or your server's response. Work through the steps below in order.
+
+<Steps>
+  <Step title="Verify your webhook URL">
+    Go to Settings → Publishing and confirm that your webhook URL is saved correctly. A missing trailing slash, a typo in the path, or an incorrect protocol (http vs. https) can all cause silent failures.
+  </Step>
+  <Step title="Check your server's response time">
+    Your server must return a 2xx HTTP status code within 10 seconds of receiving the payload. If your endpoint takes longer to process the request, SEOPilot will record it as a failure even if the article was eventually saved.
+  </Step>
+  <Step title="Review delivery logs">
+    Open the **Delivery logs** tab in your dashboard to see the exact error codes returned for each failed attempt. Look for 4xx errors (configuration issues on your end) versus 5xx errors (server-side problems).
+  </Step>
+  <Step title="Send a test payload">
+    Use the **Send test payload** button in Settings → Publishing to trigger a live test. If the test fails but your URL looks correct, the problem is likely on your server or in your middleware.
+  </Step>
+  <Step title="Check for firewall or middleware blocks">
+    Make sure your firewall, CDN, or any request-filtering middleware isn't blocking SEOPilot's IP range. If you're using a service like Cloudflare, check your WAF rules for any rules that might be rejecting the incoming request.
+  </Step>
+</Steps>
+
+<Note>
+  SEOPilot automatically retries failed deliveries 3 times using exponential backoff. If all retries fail, the article moves to **Delivery failed** status in your dashboard. You can manually re-trigger delivery or download the article as MDX or CSV directly from there — no content is ever lost.
+</Note>
+
+## Articles don't sound like my brand
+
+Brand voice is learned from your existing site content. If articles feel generic or off-tone, the fix usually comes down to giving SEOPilot better source material or refreshing your voice profile.
+
+<Steps>
+  <Step title="Check your source content volume">
+    Make sure your site has at least 3–5 pages of original, on-brand writing before running voice detection. A homepage, an about page, and a few blog posts are enough to get started.
+  </Step>
+  <Step title="Refresh your voice profile">
+    If you've added new content to your site since setup, go to Settings → Voice and click **Re-run voice detection**. SEOPilot will re-crawl your site and update its model of your tone, vocabulary, and style.
+  </Step>
+  <Step title="Edit articles that feel off">
+    Use the built-in editor to revise any draft that doesn't match your voice. Each edit you make helps the system learn your preferences over time, so future drafts improve automatically.
+  </Step>
+  <Step title="Add a style note">
+    In the editor, you can add a **style note** to any article — for example, "avoid bullet points" or "use a conversational tone." Style notes guide future drafts for that topic cluster.
+  </Step>
+</Steps>
+
+## Keywords feel too broad or too niche
+
+SEOPilot infers your niche and audience from your site content. If the keywords it surfaces feel off, you can usually correct this by adjusting your site's positioning copy.
+
+**Keywords feel too broad:** Your site may have category-level pages without enough specific positioning. Try adding more detailed product pages, use-case pages, or audience-specific landing pages so SEOPilot can identify the niche you're targeting.
+
+**Keywords feel too niche:** The opposite problem — SEOPilot is picking up very narrow signals. Add some broader positioning copy to your homepage or about page so it can surface wider keyword opportunities.
+
+In both cases, you can skip any individual keyword from the dashboard by clicking the **Skip** button next to it, and add your own keyword or topic suggestions at any time from the dashboard.
+
+## Articles aren't appearing in Google
+
+New articles typically appear in Google Search Console within 2–4 weeks of being published and indexed. If it's been less than that, wait a few more days before troubleshooting further. If it's been longer, or if your article simply isn't showing up at all, work through the steps below.
+
+<Steps>
+  <Step title="Confirm the article URL is live">
+    Visit the article URL directly in your browser and confirm the page loads with the correct content. If it returns a 404 or redirects elsewhere, the webhook delivery or your CMS import may not have completed successfully.
+  </Step>
+  <Step title="Request indexing in Google Search Console">
+    Open Google Search Console, paste the article URL into the **URL Inspection** tool, and click **Request Indexing**. This nudges Google to crawl the page sooner than it might otherwise.
+  </Step>
+  <Step title="Check your sitemap">
+    Confirm that your sitemap includes the new article URL and that your sitemap is submitted in Google Search Console under Sitemaps. Dynamic or statically generated sites sometimes require a sitemap rebuild after new pages are added.
+  </Step>
+  <Step title="Review your robots.txt">
+    Make sure your `robots.txt` file isn't disallowing the URL path or the entire directory where articles are published. A misconfigured `robots.txt` is one of the most common reasons new pages never get indexed.
+  </Step>
+</Steps>
+
+<Tip>
+  If none of these steps resolve your issue, email [support@seopilot.so](mailto:support@seopilot.so) with your account email and a description of the problem. Include the article ID from your dashboard if relevant — it helps the team locate your content and delivery logs quickly.
+</Tip>
