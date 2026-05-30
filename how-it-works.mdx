@@ -26,7 +26,7 @@ Each week, SEOPilot refreshes its understanding of your site and lines up a new 
 
 After the weekly research phase, SEOPilot shifts into its daily publishing rhythm.
 
-Each morning, the next article in your queue is either published automatically or surfaced for your review. In **Autopilot** mode, the article is sent to your site via your configured webhook or API connection — no action needed from you. In **Review-First** mode, you'll receive a notification that a new article is ready. You can read it, make edits, and publish it whenever you're ready, or skip it if the topic no longer feels relevant.
+Each morning, the next article is generated and either published automatically or held as a draft for your review. With **auto-publish on**, the article is sent to your site via your configured webhook — no action needed from you. With **auto-publish off**, the article is saved as a draft. You can read it, make edits, and publish it whenever you're ready, or leave it unpublished if the topic no longer feels relevant.
 
 This loop repeats every day. As long as SEOPilot is active, your site is publishing fresh content.
 
@@ -37,7 +37,7 @@ Every article SEOPilot produces is built for both readers and search engines. He
 - **SEO title and meta description** — Crafted around the target keyword, optimized for click-through rate in search results.
 - **H2 and H3 heading structure** — Logically organized sections that make the article easy to scan and help search engines understand the content hierarchy.
 - **FAQ section** — Answers common questions around the topic, targeting featured snippet opportunities and "People also ask" placements.
-- **Structured data (schema markup)** — Article and FAQ schema are included automatically to improve how your content appears in search results.
+- **Suggested internal links** — Links to your other articles are suggested automatically, helping you build topical clusters that strengthen your site's authority.
 - **Optimized slug** — Clean, keyword-focused URL slugs that follow SEO best practices.
 
 ## Where articles appear
@@ -51,22 +51,21 @@ SEOPilot delivers every article directly to your domain through your chosen inte
 You can connect your site using any of the following methods:
 
 - **Webhook** — SEOPilot pushes each article to a URL you control the moment it's published.
-- **Pull API** — Fetch new articles from SEOPilot on your own schedule, on demand.
 - **MDX export** — Download articles as `.mdx` files, ideal for Next.js, Astro, or any Markdown-based site.
-- **CSV export** — Download articles in bulk as a spreadsheet for manual upload workflows.
+- **CSV export** — Download articles as a spreadsheet for manual upload workflows.
 
-## Autopilot vs. Review-First
+## Auto-publish on vs. off
 
-Not sure which publishing mode is right for you? Here's how they compare:
+Not sure how you want articles to go live? Here's how the two settings compare:
 
-| Feature | Autopilot | Review-First |
+| Feature | Auto-publish on | Auto-publish off |
 |---|---|---|
-| **Publishing speed** | Immediate — articles go live as soon as they're drafted | On your schedule — articles publish when you approve them |
-| **Your involvement** | None required after setup | You read and approve each article before it publishes |
+| **Publishing speed** | Immediate — articles go live as soon as they're generated | On your schedule — articles publish when you do |
+| **Your involvement** | None required after setup | You read each draft before it publishes |
 | **Risk of off-brand content** | Low — SEOPilot learns your brand voice, but no human review step | Minimal — you catch anything that doesn't feel right before it goes live |
 | **Best for** | Founders who want fully hands-off SEO growth | Teams who want control over content quality without doing the writing |
 
-You can switch between modes at any time in your account settings. Many users start on Review-First to build confidence in the output, then switch to Autopilot once they've seen SEOPilot's style match their brand.
+You can change this at any time in **Settings → Publishing**. Many users start with auto-publish off to build confidence in the output, then turn it on once they've seen SEOPilot's style match their brand.
 
 ## Dive deeper
 
@@ -75,6 +74,6 @@ You can switch between modes at any time in your account settings. Many users st
     Learn exactly how SEOPilot selects your weekly keywords and why high-intent, domain-matched targeting beats chasing volume.
   </Card>
   <Card title="Publishing & Integrations" icon="newspaper" href="/features/publishing">
-    Explore all publishing options in detail — webhook setup, pull API reference, and MDX/CSV export workflows.
+    Explore all publishing options in detail — webhook setup and MDX/CSV export workflows.
   </Card>
 </CardGroup>

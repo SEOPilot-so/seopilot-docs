@@ -12,24 +12,24 @@ If articles are being drafted but aren't arriving at your site, the issue is alm
 
 <Steps>
   <Step title="Verify your webhook URL">
-    Go to Settings → Publishing and confirm that your webhook URL is saved correctly. A missing trailing slash, a typo in the path, or an incorrect protocol (http vs. https) can all cause silent failures.
+    Go to Settings → Integrations and confirm that your webhook URL is saved correctly. A missing trailing slash, a typo in the path, or an incorrect protocol (http vs. https) can all cause silent failures — note the URL must use `https`.
   </Step>
-  <Step title="Check your server's response time">
-    Your server must return a 2xx HTTP status code within 10 seconds of receiving the payload. If your endpoint takes longer to process the request, SEOPilot will record it as a failure even if the article was eventually saved.
+  <Step title="Check your server's response">
+    Your server must return a 2xx HTTP status code, and respond promptly. A non-2xx response or a network/timeout error is recorded as a failed delivery, even if the article was eventually saved.
   </Step>
-  <Step title="Review delivery logs">
-    Open the **Delivery logs** tab in your dashboard to see the exact error codes returned for each failed attempt. Look for 4xx errors (configuration issues on your end) versus 5xx errors (server-side problems).
+  <Step title="Check the last delivery status">
+    On the webhook in Settings → Integrations, the most recent delivery status is shown inline — for example, `Last delivery: … — 200 OK` or `Last delivery: … — failed: <error>`. Use it to tell whether the failure is a 4xx (configuration issue on your end) or a 5xx (server-side problem).
   </Step>
   <Step title="Send a test payload">
-    Use the **Send test payload** button in Settings → Publishing to trigger a live test. If the test fails but your URL looks correct, the problem is likely on your server or in your middleware.
+    Use the **Test webhook** button in Settings → Integrations to trigger a live test. If the test fails but your URL looks correct, the problem is likely on your server or in your middleware.
   </Step>
   <Step title="Check for firewall or middleware blocks">
-    Make sure your firewall, CDN, or any request-filtering middleware isn't blocking SEOPilot's IP range. If you're using a service like Cloudflare, check your WAF rules for any rules that might be rejecting the incoming request.
+    Make sure your firewall, CDN, or any request-filtering middleware isn't blocking SEOPilot's requests. If you're using a service like Cloudflare, check your WAF rules for any rules that might be rejecting the incoming request.
   </Step>
 </Steps>
 
 <Note>
-  SEOPilot automatically retries failed deliveries 3 times using exponential backoff. If all retries fail, the article moves to **Delivery failed** status in your dashboard. You can manually re-trigger delivery or download the article as MDX or CSV directly from there — no content is ever lost.
+  SEOPilot automatically retries a failed delivery with exponential backoff — up to 5 attempts total. If every attempt fails, the delivery is marked failed. No content is ever lost: re-test with **Test webhook** once your endpoint is healthy, or download the article as MDX or CSV from the article view.
 </Note>
 
 ## Articles don't sound like my brand
@@ -40,14 +40,14 @@ Brand voice is learned from your existing site content. If articles feel generic
   <Step title="Check your source content volume">
     Make sure your site has at least 3–5 pages of original, on-brand writing before running voice detection. A homepage, an about page, and a few blog posts are enough to get started.
   </Step>
-  <Step title="Refresh your voice profile">
-    If you've added new content to your site since setup, go to Settings → Voice and click **Re-run voice detection**. SEOPilot will re-crawl your site and update its model of your tone, vocabulary, and style.
+  <Step title="Update your brand voice">
+    Go to **Settings → Site information** and edit the **Brand voice** field under **Content guidance**. It's free text — describe your tone in your own words, or paste in updated guidance — and your changes guide every new article.
   </Step>
   <Step title="Edit articles that feel off">
-    Use the built-in editor to revise any draft that doesn't match your voice. Each edit you make helps the system learn your preferences over time, so future drafts improve automatically.
+    Use the built-in editor to revise any draft that doesn't match your voice before it publishes — adjust the title, meta description, slug, or body copy.
   </Step>
-  <Step title="Add a style note">
-    In the editor, you can add a **style note** to any article — for example, "avoid bullet points" or "use a conversational tone." Style notes guide future drafts for that topic cluster.
+  <Step title="Tune your content guidance">
+    Under **Settings → Site information → Content guidance**, refine the **Product summary** and **Target audiences** fields alongside **Brand voice**. Together they shape every new article SEOPilot writes.
   </Step>
 </Steps>
 

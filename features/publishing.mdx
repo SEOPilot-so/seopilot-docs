@@ -1,48 +1,50 @@
 ---
-title: "Publishing Modes: Autopilot vs. Review-First Explained"
+title: "Publishing: Auto-Publish or Review Drafts Before They Go Live"
 sidebarTitle: "Publishing"
-description: "Choose between Autopilot publishing (articles go live automatically) or Review-First mode (you approve each article before it publishes to your domain)."
+description: "Turn auto-publish on to send each scheduled article to your domain automatically, or leave it off to review every article as a draft and publish when you're ready."
 ---
 
-SEOPilot gives you two publishing modes: Autopilot and Review-First. Both deliver articles directly to your own domain — the only difference is how much control you want to exercise along the way.
+SEOPilot writes an article for your site every day and delivers it to your own domain. A single **Auto-publish** toggle controls what happens after each scheduled article is generated — publish it automatically, or hold it as a draft for you to review first.
 
-## Autopilot mode
+## Auto-publish on
 
-In Autopilot mode, SEOPilot handles everything from keyword research to publishing without requiring any action from you. Each day, a freshly drafted, SEO-structured article is automatically delivered to your site and goes live on schedule.
+With auto-publish on, SEOPilot handles everything from keyword research to publishing without requiring any action from you. Each day, a freshly drafted, SEO-structured article is generated and delivered to your site automatically.
 
-Autopilot is the right choice if you want SEO running in the background while you focus on everything else. There are no approvals to give, no queues to check, no articles to push. Just consistent, daily content hitting your domain — day after day.
+This is the right choice if you want SEO running in the background while you focus on everything else. There are no approvals to give and no articles to push — just consistent, daily content hitting your domain.
 
-## Review-First mode
+## Auto-publish off (review drafts)
 
-In Review-First mode, every article is queued in your dashboard before it publishes. You get to read it, judge it, and decide what happens next.
-
-From the review queue you can:
+With auto-publish off, every scheduled article is saved as a **draft** in your dashboard instead of going live. You open it, read it, and decide what happens next:
 
 <Steps>
-  <Step title="Approve as-is">
-    If the article looks great, approve it with one click and it publishes to your domain on the next scheduled slot.
+  <Step title="Publish as-is">
+    If the draft looks great, click **Publish** and it's delivered to your domain.
   </Step>
   <Step title="Edit before publishing">
-    Open the built-in editor to adjust the title, meta description, body copy, slug, or images — then approve the updated version.
+    Open the built-in editor to adjust the title, meta description, body copy, or slug — then publish the updated version.
   </Step>
-  <Step title="Skip the article">
-    Not the right topic for this week? Skip it entirely. SEOPilot will continue with the next queued article without any gap in your schedule.
+  <Step title="Leave it as a draft">
+    Not the right topic? Just leave it unpublished. Drafts never go live until you publish them, and SEOPilot keeps generating the next article on schedule.
   </Step>
 </Steps>
 
-Review-First is ideal for teams with brand guidelines to uphold, founders who want a final read before anything goes live, or anyone publishing in a regulated or sensitive industry.
+Reviewing drafts is ideal for teams with brand guidelines to uphold, founders who want a final read before anything goes live, or anyone publishing in a regulated or sensitive industry.
 
-## Switching between modes
+<Note>
+  Articles you generate manually (outside the daily schedule) are always saved as drafts, regardless of the auto-publish setting — so you can always generate and review on demand.
+</Note>
 
-You can switch between Autopilot and Review-First at any time from your dashboard settings. The change takes effect for the next queued article — any articles already in flight are handled according to the mode that was active when they were drafted.
+## Changing the setting
 
-## Autopilot vs. Review-First at a glance
+Toggle **Auto-publish** at any time from **Settings → Publishing**. The change takes effect for the next scheduled article.
 
-| | **Autopilot** | **Review-First** |
+## At a glance
+
+| | **Auto-publish on** | **Auto-publish off** |
 |---|---|---|
 | **Setup effort** | One-time setup, then nothing | One-time setup; periodic reviews |
-| **Daily time required** | Zero | 5–10 minutes per article |
-| **Risk of off-brand content** | Low (voice-matched, but unreviewed) | Minimal (you approve before publish) |
+| **Daily time required** | Zero | A few minutes per article |
+| **Risk of off-brand content** | Low (voice-matched, but unreviewed) | Minimal (you read each draft before publishing) |
 | **Best for** | Solo founders, hands-off operators | Teams, regulated industries, brand-sensitive sites |
 
 ## Where articles are published
@@ -52,11 +54,13 @@ Every article SEOPilot writes is delivered to your domain — not hosted on SEOP
 You can connect your domain using:
 
 <CardGroup cols={1}>
-  <Card title="Webhook / Pull API" icon="webhook" href="/integrations/webhook">
-    Automatically push or pull published articles into your CMS, static site generator, or custom publishing pipeline.
+  <Card title="Webhook" icon="webhook" href="/integrations/webhook">
+    SEOPilot pushes each article to a URL you control the moment it's published — wire it into your CMS, static site generator, or custom publishing pipeline.
   </Card>
 </CardGroup>
 
+You can also download articles as [MDX or CSV](/integrations/mdx-csv-export) and import them manually.
+
 <Note>
-  Even in Autopilot mode, you retain full control after publishing. You can edit the content, update the meta description, or unpublish any article from your SEOPilot dashboard at any time.
+  You retain full control after publishing. You can edit the content, update the meta description, or unpublish any article from your SEOPilot dashboard at any time.
 </Note>

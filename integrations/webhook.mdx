@@ -1,63 +1,95 @@
 ---
 title: "Receive SEOPilot Articles Automatically via Webhook"
 sidebarTitle: "Webhook"
-description: "Configure a webhook endpoint to receive SEOPilot articles the moment they're approved. SEOPilot POSTs each article payload to your URL automatically."
+description: "Configure a webhook endpoint to receive SEOPilot articles the moment they're generated. SEOPilot POSTs each article payload to your URL automatically."
 ---
 
-The SEOPilot webhook lets you receive articles automatically as soon as they're approved for publishing. SEOPilot sends a POST request to your endpoint with the full article payload — no polling required. Every article lands in your system the moment it's ready, so your site stays fresh without any manual intervention.
+The SEOPilot webhook lets you receive articles automatically as soon as they're generated. SEOPilot sends a POST request to your endpoint with the full article payload — no polling required. Every article lands in your system the moment it's ready, so your site stays fresh without any manual intervention.
 
 ## Setting up your webhook
 
 <Steps>
-  <Step title="Open Publishing settings">
-    Go to **Settings → Publishing** in your SEOPilot dashboard.
+  <Step title="Open Integrations settings">
+    Go to **Settings → Integrations** in your SEOPilot dashboard.
   </Step>
   <Step title="Enter your webhook URL">
-    Paste the full URL of your endpoint (e.g., `https://yoursite.com/api/seopilot`). SEOPilot will POST article payloads to this address.
+    Paste the full HTTPS URL of your endpoint (e.g., `https://yoursite.com/api/seopilot`). SEOPilot will POST article payloads to this address. The URL must use `https`.
   </Step>
-  <Step title="Set a secret token (recommended)">
-    Optionally add a secret token. SEOPilot uses this to sign every request so you can verify payloads on your end before processing them.
+  <Step title="Set a secret">
+    Add a secret token. SEOPilot uses it to sign every request so you can verify payloads on your end before processing them. A secret is required.
   </Step>
   <Step title="Save and test">
-    Click **Save**, then hit **Send test payload** to confirm your endpoint is reachable and responding correctly.
+    Save the integration, then click **Test webhook** to send a sample payload and confirm your endpoint is reachable and responding with a `2xx`.
   </Step>
 </Steps>
 
 ## Webhook payload
 
-When an article is approved and ready, SEOPilot sends a `POST` request with a JSON body structured as follows. The payload includes everything you need to render and serve the article from your own domain.
+When an article is generated, SEOPilot sends a `POST` request with a JSON body structured as follows. The payload includes everything you need to render and serve the article from your own domain.
 
 ```json payload-example.json
 {
-  "event": "article.published",
-  "article": {
-    "id": "art_01hx3z...",
-    "title": "How to Choose a CRM for a Solo Realtor",
-    "slug": "crm-for-solo-realtors",
-    "meta_description": "A practical guide to picking the right CRM...",
-    "keyword": "crm for solo realtors",
-    "body_html": "<article>...</article>",
-    "body_mdx": "# How to Choose a CRM...",
-    "published_at": "2026-06-01T09:00:00Z"
+  "event": "article.generated",
+  "delivery_id": "d3f1c2a0-5b6e-4a7c-8d9e-0f1a2b3c4d5e",
+  "created_at": "2026-06-01T09:00:00.000Z",
+  "data": {
+    "site": {
+      "id": "8d3482e5-0874-41e1-90b7-43f3fffbac05",
+      "url": "https://yoursite.com",
+      "name": "Your Site"
+    },
+    "article": {
+      "id": "a1b2c3d4-0000-0000-0000-000000000000",
+      "title": "How to Choose a CRM for a Solo Realtor",
+      "slug": "crm-for-solo-realtors",
+      "meta_title": "How to Choose a CRM for a Solo Realtor",
+      "meta_description": "A practical guide to picking the right CRM...",
+      "body_md": "# How to Choose a CRM...",
+      "internal_links": [
+        { "slug": "best-crm-features", "anchor": "CRM features that matter" }
+      ],
+      "generated_at": "2026-06-01T09:00:00.000Z",
+      "hero_image": {
+        "url": "https://images.example.com/hero.jpg",
+        "alt": "A realtor reviewing leads on a laptop",
+        "photographer": { "name": "Jane Doe", "url": "https://unsplash.com/@janedoe" },
+        "source_url": "https://unsplash.com/photos/abc123"
+      }
+    },
+    "keyword": {
+      "id": "f0e1d2c3-0000-0000-0000-000000000001",
+      "keyword": "crm for solo realtors"
+    }
   }
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `event` | string | Always `article.published` for new articles. |
-| `article.id` | string | Unique identifier for the article in SEOPilot. |
-| `article.title` | string | The article's full title. |
-| `article.slug` | string | URL-safe slug for use in your routing. |
-| `article.meta_description` | string | SEO meta description for the `<meta>` tag. |
-| `article.keyword` | string | The primary keyword this article targets. |
-| `article.body_html` | string | Rendered HTML body of the article. |
-| `article.body_mdx` | string | Raw MDX source, ideal for static site generators. |
-| `article.published_at` | string | ISO 8601 timestamp of when the article was approved. |
+| `event` | string | Always `article.generated`. |
+| `delivery_id` | string | Unique identifier for this delivery attempt. |
+| `created_at` | string | ISO 8601 timestamp of when the envelope was created. |
+| `data.site` | object | `id`, `url`, and `name` of the site the article belongs to. |
+| `data.article.id` | string | Unique identifier for the article in SEOPilot. |
+| `data.article.title` | string | The article's full title. |
+| `data.article.slug` | string | URL-safe slug for use in your routing. |
+| `data.article.meta_title` | string | SEO title for the `<title>` tag. |
+| `data.article.meta_description` | string | SEO meta description for the `<meta>` tag. |
+| `data.article.body_md` | string | The article body in Markdown. |
+| `data.article.internal_links` | array | Suggested internal links — each item has a `slug` and `anchor`. |
+| `data.article.generated_at` | string | ISO 8601 timestamp of when the article was generated. |
+| `data.article.hero_image` | object \| null | Hero image with `url`, `alt`, `photographer` (`name`, `url`), and `source_url`. May be `null`. |
+| `data.keyword` | object | The target keyword — `id` and `keyword`. |
+
+<Note>
+  The article body is delivered as Markdown in `body_md`. There is no separate HTML or MDX field — render the Markdown with your own pipeline, or write it straight to a Markdown/MDX file (see [Static Sites](/integrations/static-sites)).
+</Note>
 
 ## Verifying webhook signatures
 
-SEOPilot signs each request with an HMAC-SHA256 signature derived from your secret token. The signature is sent in the `X-SEOPilot-Signature` request header. You should verify this signature before doing anything with the payload — it guarantees the request genuinely came from SEOPilot and hasn't been tampered with.
+SEOPilot signs each request with an HMAC-SHA256 signature and sends it in the `X-SEOPilot-Signature` header. The header has the form `t=<timestamp>,v1=<signature>`, where `timestamp` is a Unix timestamp in seconds and `signature` is the hex HMAC-SHA256 of the string `` `${timestamp}.${rawBody}` `` using your secret. Verify it before doing anything with the payload — it guarantees the request genuinely came from SEOPilot and hasn't been tampered with.
+
+SEOPilot also sends `X-SEOPilot-Event` (the event name) and `X-SEOPilot-Delivery` (the delivery ID) headers, and a `User-Agent` of `SEOPilot-Webhook/1.0`.
 
 ```javascript webhook-handler.js
 const crypto = require('crypto');
@@ -66,18 +98,26 @@ const crypto = require('crypto');
  * Verify a SEOPilot webhook request.
  *
  * @param {Buffer|string} rawBody  - The raw, unparsed request body bytes.
- * @param {string}        signature - Value of the X-SEOPilot-Signature header.
- * @param {string}        secret    - Your webhook secret token from SEOPilot settings.
+ * @param {string}        header   - Value of the X-SEOPilot-Signature header (e.g. "t=1717230000,v1=abc123...").
+ * @param {string}        secret   - Your webhook secret from SEOPilot settings.
  * @returns {boolean}
  */
-function verifyWebhook(rawBody, signature, secret) {
+function verifyWebhook(rawBody, header, secret) {
+  // Parse "t=<timestamp>,v1=<signature>"
+  const parts = Object.fromEntries(
+    header.split(',').map((kv) => kv.split('='))
+  );
+  const timestamp = parts.t;
+  const signature = parts.v1;
+  if (!timestamp || !signature) return false;
+
   const expected = crypto
     .createHmac('sha256', secret)
-    .update(rawBody)
+    .update(`${timestamp}.${rawBody}`)
     .digest('hex');
 
-  const sigBuf      = Buffer.from(signature, 'hex');
-  const expectedBuf = Buffer.from(expected,  'hex');
+  const sigBuf = Buffer.from(signature, 'hex');
+  const expectedBuf = Buffer.from(expected, 'hex');
 
   // timingSafeEqual requires both buffers to be the same length.
   if (sigBuf.length !== expectedBuf.length) return false;
@@ -86,7 +126,7 @@ function verifyWebhook(rawBody, signature, secret) {
 }
 ```
 
-Pass the **raw** (unparsed) request body bytes as `rawBody` — do not pass a pre-parsed JSON object, because re-serializing it may produce a different byte sequence. Pass the value of the `X-SEOPilot-Signature` header as `signature`, and your secret token as `secret`. If `verifyWebhook` returns `false`, reject the request with a `401` and do not process the article.
+Pass the **raw** (unparsed) request body bytes as `rawBody` — do not pass a pre-parsed JSON object, because re-serializing it may produce a different byte sequence and break the signature. If `verifyWebhook` returns `false`, reject the request with a `401` and do not process the article.
 
 <Warning>
   Always verify the webhook signature before processing the payload. Do not publish content from unverified requests.
@@ -94,22 +134,8 @@ Pass the **raw** (unparsed) request body bytes as `rawBody` — do not pass a pr
 
 ## Handling failed deliveries
 
-Your endpoint must respond with a `2xx` status code for SEOPilot to consider a delivery successful. If it doesn't, SEOPilot automatically retries the delivery up to **3 times** using exponential backoff:
+Your endpoint must respond with a `2xx` status code for SEOPilot to consider a delivery successful. Respond promptly — a non-`2xx` response or a network/timeout error is recorded as a failed delivery.
 
-<CardGroup cols={3}>
-  <Card title="Retry 1" icon="clock">
-    5 minutes after the initial failure.
-  </Card>
-  <Card title="Retry 2" icon="clock">
-    15 minutes after the first retry.
-  </Card>
-  <Card title="Retry 3" icon="clock">
-    1 hour after the second retry.
-  </Card>
-</CardGroup>
+When a delivery fails, SEOPilot automatically retries it with exponential backoff — up to **5 attempts total**, doubling the wait each time (starting at roughly 2 seconds and capped at 60 seconds between attempts). If every attempt fails, the delivery is marked **failed**.
 
-If all three retries fail, the article moves to a **Delivery failed** state in your dashboard. From there you can manually re-trigger delivery with a single click, or download the article directly and publish it yourself.
-
-<Note>
-  Your webhook endpoint must return a `2xx` HTTP response within **10 seconds**, otherwise SEOPilot will treat the delivery as failed and begin the retry sequence.
-</Note>
+The most recent delivery status is shown on the webhook in **Settings → Integrations** — for example, `Last delivery: … — 200 OK` or `Last delivery: … — failed: <error>`. You can re-send a sample payload at any time with the **Test webhook** button to confirm your endpoint is healthy again.

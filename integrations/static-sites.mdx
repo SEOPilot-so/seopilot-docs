@@ -19,10 +19,10 @@ Create an API route at `/api/seopilot` that receives the SEOPilot webhook, write
     Add a new file at `pages/api/seopilot.js` (Pages Router) with the handler below. If you use the App Router, see the note after the code example.
   </Step>
   <Step title="Add your webhook URL to SEOPilot">
-    Go to **Settings → Publishing** and enter `https://yoursite.com/api/seopilot` as the webhook URL.
+    Go to **Settings → Integrations** and enter `https://yoursite.com/api/seopilot` as the webhook URL.
   </Step>
   <Step title="Deploy and test">
-    Deploy your changes, then use the **Send test payload** button in SEOPilot to confirm the handler writes the file and revalidates correctly.
+    Deploy your changes, then use the **Test webhook** button in SEOPilot to confirm the handler writes the file and revalidates correctly.
   </Step>
 </Steps>
 
@@ -33,11 +33,11 @@ import path from 'path';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { article } = req.body;
+  const { article } = req.body.data;
 
-  // Save the article as MDX
+  // Save the article body (Markdown) as an MDX file
   const filePath = path.join(process.cwd(), 'content/blog', `${article.slug}.mdx`);
-  fs.writeFileSync(filePath, article.body_mdx);
+  fs.writeFileSync(filePath, article.body_md);
 
   // Trigger on-demand ISR for this page (Pages Router only)
   await res.revalidate(`/blog/${article.slug}`);
@@ -56,7 +56,7 @@ Before writing the file, verify the `X-SEOPilot-Signature` header using your sec
 
 Astro's [Content Collections](https://docs.astro.build/en/guides/content-collections/) make it straightforward to consume SEOPilot MDX files. Create a lightweight webhook handler (e.g., a serverless function on Vercel or Netlify) that writes incoming MDX payloads to `src/content/blog/`, then fires your CI provider's deploy hook to trigger a rebuild.
 
-The MDX frontmatter that SEOPilot exports (`title`, `slug`, `meta_description`, `keyword`, `published_at`) maps directly to a standard Astro content collection schema — no transformation needed. Define your collection in `src/content/config.ts` and Astro will pick up new files automatically on the next build.
+The webhook payload fields (`title`, `slug`, `meta_title`, `meta_description`, `keyword`, `generated_at`) map directly to a standard Astro content collection schema — build the frontmatter from them in your handler before writing the file. Define your collection in `src/content/config.ts` and Astro will pick up new files automatically on the next build.
 
 <Tip>
   If you don't want to write custom code, use the MDX export and drag the files into your content directory manually. The webhook approach just automates that step.
@@ -64,7 +64,7 @@ The MDX frontmatter that SEOPilot exports (`title`, `slug`, `meta_description`, 
 
 ## Hugo
 
-Hugo reads Markdown content from `content/posts/`. Point your webhook handler to write each article's `body_mdx` field (Hugo accepts standard Markdown with YAML frontmatter) into `content/posts/${slug}.md`, then trigger a rebuild via your hosting provider's deploy hook.
+Hugo reads Markdown content from `content/posts/`. Point your webhook handler to write each article's `body_md` field (Hugo accepts standard Markdown with YAML frontmatter) into `content/posts/${slug}.md`, then trigger a rebuild via your hosting provider's deploy hook.
 
 A minimal Hugo frontmatter block looks like this:
 
@@ -92,7 +92,7 @@ The integration pattern is the same regardless of your framework or hosting prov
     Accept the POST request from SEOPilot at an endpoint you control. Verify the signature before proceeding.
   </Step>
   <Step title="Save the article body">
-    Write `article.body_mdx` (or `article.body_html`) to the appropriate content directory for your framework.
+    Write `article.body_md` (the article body is Markdown, found at `req.body.data.article`) to the appropriate content directory for your framework.
   </Step>
   <Step title="Trigger a rebuild or revalidation">
     Call your hosting provider's deploy hook, or use your framework's built-in revalidation API, to make the new page live.
