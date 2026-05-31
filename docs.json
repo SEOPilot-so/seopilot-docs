@@ -3,14 +3,14 @@
   "name": "SEOPilot",
   "theme": "almond",
   "logo": {
-    "light": "https://media.brand.dev/8d3482e5-0874-41e1-90b7-43f3fffbac05.svg",
-    "dark": "https://media.brand.dev/8d3482e5-0874-41e1-90b7-43f3fffbac05.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
   "favicon": "https://media.brand.dev/0c6a8458-d04a-4275-9715-21ad2273199d.png",
   "colors": {
     "primary": "#f9684a",
     "light": "#fc9484",
-    "dark": "#f4eaea"
+    "dark": "#e0513a"
   },
   "navigation": {
     "tabs": [
