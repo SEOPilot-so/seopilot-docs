@@ -38,6 +38,7 @@
             "group": "Publishing & Integration",
             "pages": [
               "integrations/webhook",
+              "integrations/git-auto-publish",
               "integrations/mdx-csv-export",
               "integrations/static-sites"
             ]
