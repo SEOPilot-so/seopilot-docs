@@ -24,6 +24,47 @@ If your blog is statically generated and hosted on Vercel or Netlify, writing ar
 - The repo hosted on GitHub and connected to Vercel (or Netlify) with **auto-deploy on push** to your production branch.
 - Your SEOPilot **webhook secret** from **Settings → Integrations**.
 
+## The payload
+
+SEOPilot POSTs this JSON envelope to your endpoint. The handler in the next step maps `data.article` (and `data.keyword`) to an MDX file; the remaining fields — `delivery_id`, `created_at`, `data.site`, `meta_title`, `internal_links` — are there if you want them. See the [Webhook guide](/integrations/webhook#webhook-payload) for the full field reference.
+
+```json payload-example.json
+{
+  "event": "article.generated",
+  "delivery_id": "d3f1c2a0-5b6e-4a7c-8d9e-0f1a2b3c4d5e",
+  "created_at": "2026-06-01T09:00:00.000Z",
+  "data": {
+    "site": {
+      "id": "8d3482e5-0874-41e1-90b7-43f3fffbac05",
+      "url": "https://yoursite.com",
+      "name": "Your Site"
+    },
+    "article": {
+      "id": "a1b2c3d4-0000-0000-0000-000000000000",
+      "title": "How to Choose a CRM for a Solo Realtor",
+      "slug": "crm-for-solo-realtors",
+      "meta_title": "How to Choose a CRM for a Solo Realtor",
+      "meta_description": "A practical guide to picking the right CRM...",
+      "body_md": "# How to Choose a CRM...",
+      "internal_links": [
+        { "slug": "best-crm-features", "anchor": "CRM features that matter" }
+      ],
+      "generated_at": "2026-06-01T09:00:00.000Z",
+      "hero_image": {
+        "url": "https://images.example.com/hero.jpg",
+        "alt": "A realtor reviewing leads on a laptop",
+        "photographer": { "name": "Jane Doe", "url": "https://unsplash.com/@janedoe" },
+        "source_url": "https://unsplash.com/photos/abc123"
+      }
+    },
+    "keyword": {
+      "id": "f0e1d2c3-0000-0000-0000-000000000001",
+      "keyword": "crm for solo realtors"
+    }
+  }
+}
+```
+
 ## Step 1: Add the webhook route
 
 Create a route handler that verifies the request, converts the payload to an MDX file, and commits it. The two helpers below keep the logic readable.
@@ -75,21 +116,23 @@ export function sanitizeSlug(slug: unknown): string | null {
   return s;
 }
 
-// Neutralize MDX-significant syntax in prose while preserving code blocks.
-// Prevents an article's stray "{" or "<" from executing or breaking the build.
+// Fenced code blocks and inline code spans render literally in MDX, so leave
+// them untouched. Everything else is prose, where "<", "{", "}" and a leading
+// import/export would be parsed as JSX/expressions and break the build.
+const CODE_SEGMENT = /(```[\s\S]*?```|`[^`\n]*`)/g;
+
 export function sanitizeMdxBody(body: string): string {
-  const fenced = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g;
-  const inline = /(`[^`\n]*`)/g;
-  return body.split(fenced).map((seg, i) =>
-    i % 2 === 1 ? seg : seg.split(inline).map((part, j) =>
-      j % 2 === 1 ? part : part
-        .replace(/</g, "&lt;")
-        .replace(/\{/g, "&#123;")
-        .replace(/\}/g, "&#125;")
-        .replace(/^(\s*)import\b/gm, "$1&#105;mport")
-        .replace(/^(\s*)export\b/gm, "$1&#101;xport")
-    ).join("")
-  ).join("");
+  return body
+    .split(CODE_SEGMENT)
+    .map((segment, i) =>
+      // Odd indices are the captured code segments — preserve verbatim.
+      i % 2 === 1
+        ? segment
+        : segment
+            .replace(/[{}<]/g, (ch) => `\\${ch}`)
+            .replace(/^(\s*)(import|export)\b/gm, "$1\\$2")
+    )
+    .join("");
 }
 
 // Map the webhook payload to an MDX file (frontmatter + body).
