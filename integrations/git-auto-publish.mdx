@@ -1,0 +1,278 @@
+---
+title: "Auto-Publish SEOPilot Articles by Committing to Your Git Repo"
+sidebarTitle: "Git Auto-Publish"
+description: "Receive the SEOPilot webhook and commit each article as an MDX file to your GitHub repo, so Vercel (or Netlify) auto-deploys it. The recommended pattern for statically generated Next.js blogs."
+---
+
+If your blog is statically generated and hosted on Vercel or Netlify, writing article files to disk at runtime won't work — the serverless filesystem is read-only, and statically generated pages only update on a new deploy. Instead, have your webhook **commit the article to your Git repository**. Your host detects the push, redeploys, and the new page goes live. Your content stays version-controlled, reviewable, and easy to roll back.
+
+<Note>
+  This is the recommended approach for a Git-backed static blog (Next.js App Router, Astro, etc.) on a host that auto-deploys on push. If your framework supports writing files at runtime and on-demand revalidation, the simpler [Static Sites](/integrations/static-sites) flow may suit you instead.
+</Note>
+
+## How it works
+
+1. SEOPilot sends the `article.generated` webhook to your endpoint.
+2. Your handler verifies the signature, then maps the payload to an MDX file.
+3. The handler commits the file to `content/blog/<slug>.mdx` via the GitHub API.
+4. Your host (Vercel/Netlify) sees the new commit and redeploys.
+5. Your existing static pipeline renders the post — live in a minute or two.
+
+## Prerequisites
+
+- A Next.js blog that reads MDX from a `content/blog/` directory (this guide uses the App Router).
+- The repo hosted on GitHub and connected to Vercel (or Netlify) with **auto-deploy on push** to your production branch.
+- Your SEOPilot **webhook secret** from **Settings → Integrations**.
+
+## Step 1: Add the webhook route
+
+Create a route handler that verifies the request, converts the payload to an MDX file, and commits it. The two helpers below keep the logic readable.
+
+First, the helpers — signature verification and payload-to-MDX mapping:
+
+```typescript lib/seopilot.ts
+import crypto from "node:crypto";
+import matter from "gray-matter";
+
+const TOLERANCE_SECONDS = 5 * 60;
+
+// Verify the X-SEOPilot-Signature header ("t=<ts>,v1=<hmac>") over the RAW body.
+export function verifySignature(
+  rawBody: string,
+  header: string | null,
+  secret: string,
+  nowMs: number = Date.now()
+): boolean {
+  if (!header || !secret) return false;
+
+  const parts: Record<string, string> = {};
+  for (const seg of header.split(",")) {
+    const [k, v] = seg.split("=");
+    if (k && v) parts[k.trim()] = v.trim();
+  }
+  const { t: timestamp, v1: provided } = parts;
+  if (!timestamp || !provided) return false;
+
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts)) return false;
+  if (Math.abs(nowMs / 1000 - ts) > TOLERANCE_SECONDS) return false; // replay guard
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(provided, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Only allow safe slugs — the slug becomes a file path.
+export function sanitizeSlug(slug: unknown): string | null {
+  if (typeof slug !== "string") return null;
+  const s = slug.trim();
+  if (!s || s.length > 200 || !/^[a-z0-9-]+$/.test(s)) return null;
+  return s;
+}
+
+// Neutralize MDX-significant syntax in prose while preserving code blocks.
+// Prevents an article's stray "{" or "<" from executing or breaking the build.
+export function sanitizeMdxBody(body: string): string {
+  const fenced = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g;
+  const inline = /(`[^`\n]*`)/g;
+  return body.split(fenced).map((seg, i) =>
+    i % 2 === 1 ? seg : seg.split(inline).map((part, j) =>
+      j % 2 === 1 ? part : part
+        .replace(/</g, "&lt;")
+        .replace(/\{/g, "&#123;")
+        .replace(/\}/g, "&#125;")
+        .replace(/^(\s*)import\b/gm, "$1&#105;mport")
+        .replace(/^(\s*)export\b/gm, "$1&#101;xport")
+    ).join("")
+  ).join("");
+}
+
+// Map the webhook payload to an MDX file (frontmatter + body).
+export function toMdx(article: any, keyword: string | undefined): string {
+  const hero = article.hero_image;
+  const frontmatter: Record<string, unknown> = {
+    title: article.title,
+    description: article.meta_description,
+    date: new Date(article.generated_at).toISOString().slice(0, 10),
+    ...(keyword ? { keyword } : {}),
+    ...(hero?.url && hero?.alt
+      ? {
+          image: {
+            url: hero.url,
+            alt: hero.alt,
+            ...(hero.photographer?.name ? { photographer: hero.photographer.name } : {}),
+            ...(hero.photographer?.url ? { photographer_url: hero.photographer.url } : {}),
+            ...(hero.source_url ? { source_url: hero.source_url } : {}),
+          },
+        }
+      : {}),
+  };
+  return matter.stringify(sanitizeMdxBody(article.body_md), frontmatter);
+}
+```
+
+Then the route itself — verify, validate, commit:
+
+```typescript app/api/seopilot/route.ts
+import { NextResponse } from "next/server";
+import { verifySignature, sanitizeSlug, toMdx } from "@/lib/seopilot";
+
+const GITHUB_API = "https://api.github.com";
+
+async function commitFile(filePath: string, content: string, message: string) {
+  const repo = process.env.GITHUB_REPO!;       // "owner/name"
+  const branch = process.env.GITHUB_BRANCH!;   // e.g. "main"
+  const headers = {
+    Authorization: `Bearer ${process.env.GITHUB_TOKEN!}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  // Look up the existing file to get its SHA (needed to update) and skip no-op writes.
+  const getRes = await fetch(
+    `${GITHUB_API}/repos/${repo}/contents/${filePath}?ref=${branch}`,
+    { headers }
+  );
+  let sha: string | undefined;
+  if (getRes.ok) {
+    const existing = await getRes.json();
+    const current = Buffer.from(existing.content, "base64").toString("utf8");
+    if (current === content) return "skipped";
+    sha = existing.sha;
+  }
+
+  const putRes = await fetch(`${GITHUB_API}/repos/${repo}/contents/${filePath}`, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message,
+      branch,
+      content: Buffer.from(content, "utf8").toString("base64"),
+      ...(sha ? { sha } : {}),
+    }),
+  });
+  if (!putRes.ok) throw new Error(`GitHub PUT failed: ${putRes.status}`);
+  return sha ? "updated" : "created";
+}
+
+export async function POST(request: Request) {
+  const secret = process.env.SEOPILOT_WEBHOOK_SECRET;
+  if (!secret) return NextResponse.json({ error: "Not configured" }, { status: 500 });
+
+  // Read the RAW body and verify BEFORE parsing.
+  const rawBody = await request.text();
+  const signature = request.headers.get("x-seopilot-signature");
+  if (!verifySignature(rawBody, signature, secret)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const payload = JSON.parse(rawBody);
+  if (payload.event !== "article.generated" || !payload.data?.article) {
+    return NextResponse.json({ error: "Unsupported event" }, { status: 400 });
+  }
+
+  const article = payload.data.article;
+  const slug = sanitizeSlug(article.slug);
+  if (!slug) return NextResponse.json({ error: "Invalid slug" }, { status: 400 });
+
+  try {
+    const action = await commitFile(
+      `content/blog/${slug}.mdx`,
+      toMdx(article, payload.data.keyword?.keyword),
+      `content: publish "${article.title}" via SEOPilot`
+    );
+    return NextResponse.json({ ok: true, action, slug });
+  } catch (err) {
+    console.error("SEOPilot publish failed:", err);
+    // Return 5xx so SEOPilot retries.
+    return NextResponse.json({ error: "Publish failed" }, { status: 500 });
+  }
+}
+```
+
+<Note>
+  This route uses `node:crypto` and `Buffer`, so it must run on the Node.js runtime — the default for App Router route handlers. Don't add `export const runtime = "edge"`. `gray-matter` (`npm i gray-matter`) safely serializes the frontmatter as YAML.
+</Note>
+
+The signature check mirrors the helper in the [Webhook guide](/integrations/webhook#verifying-webhook-signatures). Adjust the frontmatter keys in `toMdx` to match your blog's schema.
+
+## Step 2: Create a GitHub access token
+
+The route commits files, so it needs a token with write access to your repo's contents. Use a **fine-grained personal access token** scoped to a single repository.
+
+<Steps>
+  <Step title="Open the token page">
+    Go to **GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens** and click **Generate new token**.
+  </Step>
+  <Step title="Name it and set expiration">
+    Give it a clear name (e.g., `seopilot-publish`) and choose an expiration. Fine-grained tokens expire, so set a reminder to rotate it.
+  </Step>
+  <Step title="Limit repository access">
+    Under **Repository access**, choose **Only select repositories** and select the repo your blog lives in.
+  </Step>
+  <Step title="Grant Contents write">
+    Under **Permissions → Repository permissions**, set **Contents** to **Read and write**. Leave everything else as **No access** (GitHub adds **Metadata: Read-only** automatically — that's expected).
+  </Step>
+  <Step title="Generate and copy">
+    Click **Generate token** and copy it immediately — GitHub won't show it again.
+  </Step>
+</Steps>
+
+<Tip>
+  A classic PAT with the `repo` scope also works, but it grants access to all your repositories. The fine-grained, single-repo token is safer.
+</Tip>
+
+## Step 3: Add environment variables
+
+Add these to your hosting provider (in Vercel: **Project → Settings → Environment Variables**, Production), then redeploy so they take effect.
+
+| Variable | Value |
+|---|---|
+| `SEOPILOT_WEBHOOK_SECRET` | Your webhook secret from SEOPilot **Settings → Integrations**. |
+| `GITHUB_TOKEN` | The fine-grained token from Step 2. |
+| `GITHUB_REPO` | Your repo as `owner/name` (e.g. `your-user/your-blog`). |
+| `GITHUB_BRANCH` | Your production branch (e.g. `main`). |
+
+## Step 4: Connect and test
+
+<Steps>
+  <Step title="Set the webhook URL">
+    In SEOPilot, go to **Settings → Integrations** and enter your endpoint, e.g. `https://yoursite.com/api/seopilot`. Copy the signing secret into `SEOPILOT_WEBHOOK_SECRET`.
+  </Step>
+  <Step title="Send a test delivery">
+    Click **Test webhook**. You should see a `200` response in the delivery log.
+  </Step>
+  <Step title="Confirm the commit and deploy">
+    Check that a new commit appears under `content/blog/`, your host redeploys, and the post is live at `/blog/<slug>` within a minute or two.
+  </Step>
+</Steps>
+
+## Updates and retries
+
+The handler is idempotent. When SEOPilot retries a delivery (up to 5 attempts) or regenerates an article, the `commitFile` helper looks up the existing file first:
+
+- **No file yet** → it creates one.
+- **Same content** → it returns `skipped`, so retries never produce duplicate commits.
+- **Changed content** → it updates the file with the existing SHA.
+
+If you want updated articles to show a "last updated" date, add a `lastUpdated` field to the frontmatter when the file already exists.
+
+## Security checklist
+
+<Warning>
+  The article body comes from an external request. If your blog renders MDX with JavaScript expressions enabled, treat `body_md` as untrusted.
+</Warning>
+
+- **Verify the raw body.** Always call `verifySignature` on the unparsed body before doing anything else, and reject with `401` on failure.
+- **Sanitize the slug.** It becomes a file path — restrict it to `[a-z0-9-]` and cap its length to block path traversal.
+- **Sanitize the body.** `sanitizeMdxBody` escapes `{`, `}`, and `<` and neutralizes `import`/`export` in prose (while preserving code blocks), so a stray brace can't break your build and injected MDX can't execute at build time.
+- **Scope the token.** Use a fine-grained, single-repo, Contents-only token. Store it only in your host's environment variables — never commit it.
+
+## Search engine discovery
+
+You don't need to ping search engines from the webhook — at commit time the page isn't deployed yet. Once your build finishes, the new post is in your sitemap, and a scheduled job (for example a daily [IndexNow](https://www.indexnow.org/) submission of your sitemap URLs) notifies search engines. Most frameworks add new posts to the sitemap automatically.

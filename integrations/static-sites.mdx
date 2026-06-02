@@ -52,6 +52,10 @@ Before writing the file, verify the `X-SEOPilot-Signature` header using your sec
   **App Router users:** `res.revalidate()` is a Pages Router API and is not available in App Router route handlers. Use `revalidatePath` from `next/cache` instead. Create `app/api/seopilot/route.js` and call `revalidatePath('/blog/' + article.slug)` after saving the file.
 </Note>
 
+<Warning>
+  Writing files at runtime won't persist on Vercel or Netlify — their serverless filesystem is read-only, and statically generated pages only change on a new deploy. For a statically generated blog on these hosts, commit the article to your Git repo instead and let the push trigger a redeploy. See [Git Auto-Publish](/integrations/git-auto-publish).
+</Warning>
+
 ## Astro
 
 Astro's [Content Collections](https://docs.astro.build/en/guides/content-collections/) make it straightforward to consume SEOPilot MDX files. Create a lightweight webhook handler (e.g., a serverless function on Vercel or Netlify) that writes incoming MDX payloads to `src/content/blog/`, then fires your CI provider's deploy hook to trigger a rebuild.
